@@ -1,0 +1,45 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Compte</title><link rel="stylesheet" href="/assets/css/style.css"></head><body><nav class="nav"><a class="brand" href="/"><span class="mark"></span><span>NOVA SUPPLY</span></a><div class="navlinks"><a href="/boutique.html">Boutique</a><a href="/panier.html">Panier <span id="cartCount" class="badge">0</span></a><a href="/compte.html">Compte</a><a href="/sav.html">SAV</a><a href="/admin.html">Admin</a><a class="pill" href="/login.html">Connexion</a></div></nav><div class="layout"><aside class="side"><a class="active">Mon compte</a><a href="/sav.html">SAV</a><a onclick="logout()">Déconnexion</a></aside><main><h1>Espace client</h1><div id="accountBox" class="grid"></div><div class="card"><h2>Ajouter une adresse</h2><div class="form-row"><input id="addrLabel" placeholder="Libellé"><select id="addrType"><option value="shipping">Livraison</option><option value="billing">Facturation</option></select></div><input id="addr1" placeholder="Adresse"><div class="form-row"><input id="addrZip" placeholder="Code postal"><input id="addrCity" placeholder="Ville"></div><input id="addrCountry" value="FR" placeholder="Pays"><button class="btn mint" onclick="saveAddress()">Enregistrer l'adresse</button></div></main></div><script src="/assets/js/app.js"></script>
+<script>
+async function loadClientSupportThreads(){
+  const base = document.querySelector('#accountBox');
+  if(!base || document.querySelector('#supportThreads')) return;
+
+  const wrap = document.createElement('div');
+  wrap.id = 'supportThreads';
+  wrap.className = 'card';
+  wrap.innerHTML = '<h2>Conversations SAV</h2><p>Chargement...</p>';
+  base.parentElement.appendChild(wrap);
+
+  try{
+    const d = await api('/api/me');
+    const tickets = d.tickets || [];
+    if(!tickets.length){
+      wrap.innerHTML = '<h2>Conversations SAV</h2><p>Aucun ticket SAV.</p>';
+      return;
+    }
+
+    let html = '<h2>Conversations SAV</h2>';
+    for(const t of tickets){
+      const msgs = await api('/api/support/'+t.id+'/messages');
+      html += `
+        <div class="card" style="margin-top:12px">
+          <h3>${t.ticket_number} — ${t.subject}</h3>
+          <p><b>Statut :</b> ${t.status}</p>
+          ${(msgs||[]).map(m=>`
+            <p><b>${m.author_role}</b> — ${m.author_email||''}<br>${m.message}</p>
+          `).join('')}
+        </div>
+      `;
+    }
+    wrap.innerHTML = html;
+  }catch(e){
+    wrap.innerHTML = '<h2>Conversations SAV</h2><p>Erreur : '+e.message+'</p>';
+  }
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  setTimeout(loadClientSupportThreads, 600);
+});
+</script>
+
+</body></html>

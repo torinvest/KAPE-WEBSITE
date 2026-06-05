@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>SAV Admin</title>
+<link rel="stylesheet" href="/assets/css/style.css">
+</head>
+<body>
+
+<main class="layout">
+  <aside class="side">
+    <a href="/admin.html">Dashboard</a>
+    <a href="/clients.html">Clients</a>
+    <a href="/orders.html">Commandes</a>
+    <a href="/imports.html">Imports</a>
+    <a href="/documents.html">Documents</a>
+    <a href="/sav-admin.html" class="active">SAV Admin</a>
+    <a href="/audit.html">Audit Logs</a><a href="/notifications.html">Notifications</a>
+  </aside>
+
+  <section>
+    <h1>SAV Admin</h1>
+    <div id="tickets">Chargement...</div>
+  </section>
+</main>
+
+<script src="/assets/js/app.js"></script>
+<script>
+async function loadSupportAdmin(){
+  const box = document.querySelector('#tickets');
+  const rows = await api('/api/admin/support');
+
+  box.innerHTML = rows.map(t => `
+    <div class="card" style="margin-bottom:18px">
+      <h2>${t.ticket_number || 'Ticket'} — ${t.subject || ''}</h2>
+      <p><b>Client :</b> ${t.email || ''}</p>
+      <p><b>Message :</b> ${t.message || ''}</p>
+      <p><b>Statut :</b> ${t.status || ''} | <b>Priorité :</b> ${t.priority || ''}</p>
+
+      <select id="status_${t.id}">
+        <option value="open" ${t.status==='open'?'selected':''}>open</option>
+        <option value="pending" ${t.status==='pending'?'selected':''}>pending</option>
+        <option value="closed" ${t.status==='closed'?'selected':''}>closed</option>
+      </select>
+
+      <textarea id="reply_${t.id}" placeholder="Réponse admin..." style="width:100%;min-height:90px;margin-top:10px"></textarea>
+
+      <button class="btn" onclick="replyTicket(${t.id})">Répondre / mettre à jour</button>
+    </div>
+  `).join('') || '<div class="card">Aucun ticket SAV.</div>';
+}
+
+async function replyTicket(id){
+  await api('/api/admin/support/' + id, {
+    method:'PATCH',
+    body: JSON.stringify({
+      status: document.querySelector('#status_'+id).value,
+      admin_response: document.querySelector('#reply_'+id).value
+    })
+  });
+  alert('Ticket SAV mis à jour');
+  loadSupportAdmin();
+}
+
+loadSupportAdmin().catch(e=>{
+  document.querySelector('#tickets').innerHTML = '<div class="card">Erreur : '+e.message+'</div>';
+});
+</script>
+
+</body>
+</html>
